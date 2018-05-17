@@ -1,11 +1,12 @@
 import Component from '@ember/component';
 import { get, computed } from '@ember/object';
+import { later } from '@ember/runloop';
 import libphonenumber from 'npm:libphonenumber-js';
 import metadata from 'npm:libphonenumber-js/metadata.full.json';
 import examples from 'npm:libphonenumber-js/examples.mobile.json';
 
 import layout from '../templates/components/intl-phone-input';
-import countries from '../utils/countries';
+import countries from '../utils/not-as-many-countries';
 import FORMATS from '../utils/formats';
 import LOCAL_CODES from '../utils/localcodes';
 import rawValue from '../utils/raw-value';
@@ -17,10 +18,10 @@ const { keys, assign } = Object;
 
 export default Component.extend({
   autocomplete: 'off',
-  inputClassName: 'ember-intl-phone-input__input',
+  inputClassName: 'form-control ember-intl-phone-input__input',
   classNames: ['ember-intl-phone-input'],
   hasDropDown: true,
-  country: 'RU',
+  country: 'AT',
   countries,
   layout,
   showExampleAsPlaceholder: true,
@@ -32,7 +33,7 @@ export default Component.extend({
 
   disabled: false,
   readonly: false,
-  inputType: 'text',
+  inputType: 'tel',
   inputComponent: 'intl-phone-input/input',
 
   // power select options
@@ -41,6 +42,7 @@ export default Component.extend({
   // actions
   keyUpInput() {},
   valueChanged() {},
+  onBlur() {},
 
   value: computed('phone', {
     get() {
@@ -177,6 +179,21 @@ export default Component.extend({
       let { probCountry, probCountries } =
         performSearchCountry(value, selectedCountry, countryOptions, guessedCountries, metaLocalCodes, CALLING_CODES);
 
+      if (! probCountries && value.length > 1) {
+        let term = value;
+        do {
+          term = term.substr(0, term.length - 1);
+          let result = performSearchCountry(term, selectedCountry, countryOptions, guessedCountries, metaLocalCodes, CALLING_CODES);
+          probCountry = result.probCountry;
+          probCountries = result.probCountries;
+
+          if (probCountries === null && probCountry) {
+            this.set('guessedCountries', null);
+            return probCountry;
+          }
+        } while(! probCountries && term.length > 0);
+      }
+
       this.set('guessedCountries', probCountries);
       return probCountry;
     }
@@ -206,6 +223,12 @@ export default Component.extend({
       this.set('selected', selected);
 
       this.valueChanged(this.prepareForOutput(value, selected));
+
+      later(this, () => {
+        const textField = this.element.querySelector(`input[type=${this.inputType}]`);
+        textField.focus();
+        textField.selectionStart = 10000;
+      }, 100);
     },
 
     keyUpInput(value, event) {
@@ -221,7 +244,22 @@ export default Component.extend({
     },
 
     valueChanged(value) {
+      this.get('countryOptions').mapBy('callingCode').forEach(code => {
+        if (value.startsWith(code)) {
+          value = `+${value}`;
+        }
+      });
+
+      // this.sendAction('keyUpInput', value);
+
       let formattedValue = this.formatAsYouType(value, this.get('shouldFormatOnChange'));
+
+      let country = this.searchCountryBasedOnValue(formattedValue, this.get('selected.country'));
+
+      if (country) {
+        this.set('selected', this.findOptionByIsoCode(country));
+      }
+
       let selected = this.get('selected');
 
       if (!this.get('keepUserFormat') && value) {

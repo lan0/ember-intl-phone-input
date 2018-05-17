@@ -29,7 +29,7 @@
 {{else}}
   {{input
     class=inputClassName
-    type=type
+    type=inputType
     disabled=disabled
     autocomplete=autocomplete
     autocorrect="off"
@@ -37,7 +37,9 @@
     spellcheck="false"
     value=value
     placeholder=placeholder
+    required=required
     change=(action "valueChanged" value)
     keyUp=(action "keyUpInput" value)
+    focus-out=(action onBlur)
   }}
 {{/if}}

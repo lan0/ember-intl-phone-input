@@ -1,6 +1,7 @@
 import Component from '@ember/component';
 import { get, computed } from '@ember/object';
 import { later } from '@ember/runloop';
+import { assign } from '@ember/polyfills';
 import libphonenumber from 'npm:libphonenumber-js';
 import metadata from 'npm:libphonenumber-js/metadata.full.json';
 import examples from 'npm:libphonenumber-js/examples.mobile.json';
@@ -14,7 +15,7 @@ import performSearchCountry from '../utils/perform-search-country';
 
 const { countries: METADATA_COUNTRIES, country_calling_codes: CALLING_CODES } = metadata;
 const { parseNumber, formatNumber, AsYouType, isValidNumber } = libphonenumber;
-const { keys, assign } = Object;
+const { keys } = Object;
 
 export default Component.extend({
   autocomplete: 'off',
@@ -127,7 +128,7 @@ export default Component.extend({
     option = String(get(option, 'name')).toLowerCase();
     term = String(term).toLowerCase();
 
-    return option.startsWith(term) ? 1 : -1;
+    return option.indexOf(term) === 0 ? 1 : -1;
   },
 
   formatAsYouType(value, shouldFormat) {
@@ -245,7 +246,7 @@ export default Component.extend({
 
     valueChanged(value) {
       this.get('countryOptions').mapBy('callingCode').forEach(code => {
-        if (value.startsWith(code)) {
+        if (value.indexOf(code) === 0) {
           value = `+${value}`;
         }
       });

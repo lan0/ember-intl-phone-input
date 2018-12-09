@@ -30,7 +30,7 @@
     "test": "ember try:each"
   },
   "dependencies": {
-    "ember-browserify": "^1.2.2",
+    "ember-auto-import": "^1.2.18",
     "ember-cli-babel": "^6.11.0",
     "ember-cli-htmlbars": "^2.0.1",
     "ember-power-select": "^2.0.0-beta.3",
